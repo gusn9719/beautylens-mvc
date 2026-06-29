@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="review.dao.ReviewDAO">
+
+    <select id="selectByProductId" parameterType="int" resultType="reviewVO">
+        SELECT REVIEW_ID              AS reviewId,
+               PRODUCT_ID             AS productId,
+               PLATFORM_REVIEW_ID     AS platformReviewId,
+               RATING                 AS rating,
+               REVIEW_TEXT            AS reviewText,
+               TO_CHAR(REVIEW_DATE, 'YYYY-MM-DD') AS reviewDate,
+               REVIEWER_SKIN_TYPE     AS reviewerSkinType,
+               REVIEWER_SKIN_CONCERN  AS reviewerSkinConcern,
+               SENTIMENT_LABEL        AS sentimentLabel,
+               SENTIMENT_ID           AS sentimentId,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD') AS regDate
+          FROM BL_REVIEWS
+         WHERE PRODUCT_ID = #{_parameter}
+         ORDER BY REVIEW_ID DESC
+    </select>
+
+    <select id="selectBySentiment" parameterType="map" resultType="reviewVO">
+        SELECT REVIEW_ID              AS reviewId,
+               PRODUCT_ID             AS productId,
+               PLATFORM_REVIEW_ID     AS platformReviewId,
+               RATING                 AS rating,
+               REVIEW_TEXT            AS reviewText,
+               TO_CHAR(REVIEW_DATE, 'YYYY-MM-DD') AS reviewDate,
+               REVIEWER_SKIN_TYPE     AS reviewerSkinType,
+               REVIEWER_SKIN_CONCERN  AS reviewerSkinConcern,
+               SENTIMENT_LABEL        AS sentimentLabel,
+               SENTIMENT_ID           AS sentimentId,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD') AS regDate
+          FROM BL_REVIEWS
+         WHERE PRODUCT_ID = #{productId}
+           AND SENTIMENT_LABEL = #{sentimentLabel}
+         ORDER BY REVIEW_ID DESC
+    </select>
+
+</mapper>

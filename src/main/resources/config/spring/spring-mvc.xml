@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+  xmlns:mvc="http://www.springframework.org/schema/mvc"
+  xmlns:context="http://www.springframework.org/schema/context"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="
+    http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/mvc
+    http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+  <!-- Component Scan: kr.ac.kopo 패키지 -->
+  <context:component-scan base-package="kr.ac.kopo" />
+
+  <!-- MVC 애너테이션 활성화 + Jackson JSON 설정 -->
+  <mvc:annotation-driven>
+    <mvc:message-converters>
+      <bean class="org.springframework.http.converter.StringHttpMessageConverter">
+        <property name="supportedMediaTypes">
+          <list>
+            <value>text/html; charset=UTF-8</value>
+            <value>text/plain; charset=UTF-8</value>
+          </list>
+        </property>
+      </bean>
+      <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter">
+        <property name="supportedMediaTypes">
+          <list>
+            <value>application/json; charset=UTF-8</value>
+            <value>text/html; charset=UTF-8</value>
+          </list>
+        </property>
+      </bean>
+    </mvc:message-converters>
+  </mvc:annotation-driven>
+
+  <!-- 정적 리소스 처리 -->
+  <mvc:default-servlet-handler />
+
+  <!-- JSP View Resolver -->
+  <mvc:view-resolvers>
+    <mvc:jsp prefix="/WEB-INF/jsp/" suffix=".jsp" />
+  </mvc:view-resolvers>
+
+  <!-- DataSource: Oracle XE (hr/hr, xepdb1) -->
+  <bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" destroy-method="close">
+    <property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+    <property name="url" value="jdbc:oracle:thin:@localhost:1521/xepdb1" />
+    <property name="username" value="hr" />
+    <property name="password" value="hr" />
+    <property name="maxActive" value="10" />
+    <property name="maxIdle" value="5" />
+  </bean>
+
+  <!-- MyBatis SqlSessionFactory -->
+  <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+    <property name="dataSource" ref="dataSource" />
+    <property name="configLocation" value="classpath:config/mybatis/sqlMapConfig.xml" />
+    <property name="mapperLocations" value="classpath:config/sqlMap/**/*.xml" />
+  </bean>
+
+  <!-- MyBatis SqlSessionTemplate -->
+  <bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+    <constructor-arg ref="sqlSessionFactory" />
+  </bean>
+
+</beans>

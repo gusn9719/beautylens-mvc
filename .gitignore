@@ -1,0 +1,20 @@
+# Build artifacts
+target/
+tmp/
+*.class
+
+# Eclipse metadata
+.settings/
+.classpath
+.project
+
+# Manual dev snapshots (git history replaces these)
+backup_before_demo_ui_20260630_1110/
+backup_before_face_login_20260630_1410/
+
+# Face auth model weights (too large for git, ~600MB)
+face_auth_server/models/
+face_auth_server/__pycache__/
+face_auth_server/*.log
+
+scripts/__pycache__/
