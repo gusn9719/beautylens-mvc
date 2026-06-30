@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="member.dao.MemberDAO">
+
+    <insert id="insert" parameterType="memberVO">
+        INSERT INTO BL_MEMBERS (
+            MEMBER_ID, LOGIN_ID, PASSWORD, NICKNAME, SKIN_TYPE, SKIN_CONCERN
+        ) VALUES (
+            SEQ_BL_MEMBERS.NEXTVAL, #{loginId}, #{password}, #{nickname}, #{skinType}, #{skinConcern}
+        )
+    </insert>
+
+    <select id="selectByLoginId" resultType="memberVO">
+        SELECT MEMBER_ID                        AS memberId,
+               LOGIN_ID                         AS loginId,
+               PASSWORD                         AS password,
+               NICKNAME                         AS nickname,
+               SKIN_TYPE                        AS skinType,
+               SKIN_CONCERN                     AS skinConcern,
+               ROLE                             AS role,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD')  AS regDate
+          FROM BL_MEMBERS
+         WHERE LOGIN_ID = #{_parameter}
+    </select>
+
+    <select id="selectByLoginIdAndPassword" parameterType="map" resultType="memberVO">
+        SELECT MEMBER_ID                        AS memberId,
+               LOGIN_ID                         AS loginId,
+               PASSWORD                         AS password,
+               NICKNAME                         AS nickname,
+               SKIN_TYPE                        AS skinType,
+               SKIN_CONCERN                     AS skinConcern,
+               ROLE                             AS role,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD')  AS regDate
+          FROM BL_MEMBERS
+         WHERE LOGIN_ID = #{loginId}
+           AND PASSWORD = #{password}
+    </select>
+
+    <select id="selectByMemberId" parameterType="int" resultType="memberVO">
+        SELECT MEMBER_ID                        AS memberId,
+               LOGIN_ID                         AS loginId,
+               PASSWORD                         AS password,
+               NICKNAME                         AS nickname,
+               SKIN_TYPE                        AS skinType,
+               SKIN_CONCERN                     AS skinConcern,
+               ROLE                             AS role,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD')  AS regDate
+          FROM BL_MEMBERS
+         WHERE MEMBER_ID = #{_parameter}
+    </select>
+
+    <update id="updateProfile" parameterType="memberVO">
+        UPDATE BL_MEMBERS
+           SET NICKNAME     = #{nickname},
+               SKIN_TYPE    = #{skinType},
+               SKIN_CONCERN = #{skinConcern}
+         WHERE MEMBER_ID = #{memberId}
+    </update>
+
+</mapper>
