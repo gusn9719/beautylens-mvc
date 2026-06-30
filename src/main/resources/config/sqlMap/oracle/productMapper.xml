@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="product.dao.ProductDAO">
+
+    <select id="selectList" parameterType="pageParam" resultType="productVO">
+        SELECT PRODUCT_ID             AS productId,
+               PLATFORM               AS platform,
+               PLATFORM_PRODUCT_ID    AS platformProductId,
+               PRODUCT_KEY            AS productKey,
+               PRODUCT_NAME           AS productName,
+               BRAND                  AS brand,
+               CATEGORY               AS category,
+               PRICE                  AS price,
+               AVG_RATING             AS avgRating,
+               TOTAL_REVIEW_COUNT     AS totalReviewCount,
+               OVERALL_POS_RATE       AS overallPosRate,
+               OVERALL_NEU_RATE       AS overallNeuRate,
+               OVERALL_NEG_RATE       AS overallNegRate,
+               BASE_SKIN_TYPE         AS baseSkinType,
+               SKIN_REVIEW_COUNT      AS skinReviewCount,
+               SKIN_POS_RATE          AS skinPosRate,
+               SKIN_NEU_RATE          AS skinNeuRate,
+               SKIN_NEG_RATE          AS skinNegRate,
+               TOP_NEED_TAGS          AS topNeedTags,
+               TOP_CONCERN_TAGS       AS topConcernTags,
+               CAUTION_LEVEL          AS cautionLevel,
+               RECOMMENDATION_SCORE   AS recommendationScore,
+               RECOMMENDATION_TIER    AS recommendationTier,
+               EVIDENCE_LEVEL         AS evidenceLevel,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD') AS regDate,
+               PRODUCT_URL            AS productUrl,
+               IMAGE_URL              AS imageUrl,
+               IMAGE_STATUS           AS imageStatus,
+               (SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES fav WHERE fav.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS favoriteCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingCount,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingAvg,
+               (SELECT COUNT(*) FROM BL_USER_PRODUCT_EVENTS ev WHERE ev.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND ev.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')) AS viewCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS c WHERE c.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND c.STATUS = 'ACTIVE') AS commentCount
+          FROM BL_PRODUCTS
+        <where>
+            AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+            )
+            <if test="keyword != null and keyword != ''">
+                AND (PRODUCT_NAME LIKE '%' || #{keyword} || '%'
+                     OR BRAND LIKE '%' || #{keyword} || '%')
+            </if>
+            <if test="category != null and category != ''">
+                AND CATEGORY = #{category}
+            </if>
+            <if test="brand != null and brand != ''">
+                AND BRAND = #{brand}
+            </if>
+            <if test="skinType != null and skinType != ''">
+                AND BASE_SKIN_TYPE = #{skinType}
+            </if>
+            <if test="platform != null and platform != '' and platform != 'all'">
+                AND PLATFORM = #{platform}
+            </if>
+            <if test="imageOnly != null and imageOnly">
+                AND IMAGE_URL IS NOT NULL
+                AND IMAGE_STATUS = 'found'
+            </if>
+        </where>
+        <choose>
+            <when test="sortBy == 'score'">ORDER BY RECOMMENDATION_SCORE DESC NULLS LAST</when>
+            <when test="sortBy == 'rating'">ORDER BY AVG_RATING DESC NULLS LAST</when>
+            <when test="sortBy == 'reviewCount'">ORDER BY TOTAL_REVIEW_COUNT DESC NULLS LAST</when>
+            <otherwise>ORDER BY PRODUCT_ID DESC</otherwise>
+        </choose>
+        OFFSET #{offset} ROWS FETCH NEXT #{size} ROWS ONLY
+    </select>
+
+    <select id="selectOne" parameterType="int" resultType="productVO">
+        SELECT PRODUCT_ID             AS productId,
+               PLATFORM               AS platform,
+               PLATFORM_PRODUCT_ID    AS platformProductId,
+               PRODUCT_KEY            AS productKey,
+               PRODUCT_NAME           AS productName,
+               BRAND                  AS brand,
+               CATEGORY               AS category,
+               PRICE                  AS price,
+               AVG_RATING             AS avgRating,
+               TOTAL_REVIEW_COUNT     AS totalReviewCount,
+               OVERALL_POS_RATE       AS overallPosRate,
+               OVERALL_NEU_RATE       AS overallNeuRate,
+               OVERALL_NEG_RATE       AS overallNegRate,
+               BASE_SKIN_TYPE         AS baseSkinType,
+               SKIN_REVIEW_COUNT      AS skinReviewCount,
+               SKIN_POS_RATE          AS skinPosRate,
+               SKIN_NEU_RATE          AS skinNeuRate,
+               SKIN_NEG_RATE          AS skinNegRate,
+               TOP_NEED_TAGS          AS topNeedTags,
+               TOP_CONCERN_TAGS       AS topConcernTags,
+               CAUTION_LEVEL          AS cautionLevel,
+               RECOMMENDATION_SCORE   AS recommendationScore,
+               RECOMMENDATION_TIER    AS recommendationTier,
+               EVIDENCE_LEVEL         AS evidenceLevel,
+               TO_CHAR(REG_DATE, 'YYYY-MM-DD') AS regDate,
+               PRODUCT_URL            AS productUrl,
+               IMAGE_URL              AS imageUrl,
+               IMAGE_STATUS           AS imageStatus,
+               (SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES fav WHERE fav.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS favoriteCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingCount,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingAvg,
+               (SELECT COUNT(*) FROM BL_USER_PRODUCT_EVENTS ev WHERE ev.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND ev.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')) AS viewCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS c WHERE c.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND c.STATUS = 'ACTIVE') AS commentCount
+          FROM BL_PRODUCTS
+         WHERE PRODUCT_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+    </select>
+
+</mapper>

@@ -1,0 +1,323 @@
+-- ============================================================
+-- BeautyLens Oracle DDL
+-- Target DB: Oracle XE, User: hr, SID: xepdb1
+-- Created: 2026-06-29
+-- Updated: 2026-06-30 (removed Korean comments to prevent sqlplus encoding issues)
+-- ============================================================
+
+-- 6 sequences
+CREATE SEQUENCE SEQ_BL_MEMBERS         START WITH 1 NOCACHE;
+CREATE SEQUENCE SEQ_BL_PRODUCTS        START WITH 1 NOCACHE;
+CREATE SEQUENCE SEQ_BL_REVIEWS         START WITH 1 NOCACHE;
+CREATE SEQUENCE SEQ_BL_FAVORITES       START WITH 1 NOCACHE;
+CREATE SEQUENCE SEQ_BL_RECOMMENDATIONS START WITH 1 NOCACHE;
+CREATE SEQUENCE SEQ_BL_IMPORT_LOGS     START WITH 1 NOCACHE;
+
+-- ============================================================
+-- BL_MEMBERS: member accounts
+-- ============================================================
+CREATE TABLE BL_MEMBERS (
+    MEMBER_ID    NUMBER         PRIMARY KEY,
+    LOGIN_ID     VARCHAR2(50)   UNIQUE NOT NULL,
+    PASSWORD     VARCHAR2(200)  NOT NULL,
+    NICKNAME     VARCHAR2(50),
+    SKIN_TYPE    VARCHAR2(20),
+    SKIN_CONCERN VARCHAR2(200),
+    REG_DATE     DATE           DEFAULT SYSDATE,
+    ROLE         VARCHAR2(20)   DEFAULT 'USER'
+);
+
+-- ============================================================
+-- BL_PRODUCTS: cosmetic product information
+-- ============================================================
+CREATE TABLE BL_PRODUCTS (
+    PRODUCT_ID            NUMBER         PRIMARY KEY,
+    PLATFORM              VARCHAR2(20)   NOT NULL,
+    PLATFORM_PRODUCT_ID   VARCHAR2(50)   NOT NULL,
+    PRODUCT_KEY           VARCHAR2(80)   UNIQUE NOT NULL,
+    PRODUCT_NAME          VARCHAR2(500)  NOT NULL,
+    BRAND                 VARCHAR2(100),
+    CATEGORY              VARCHAR2(50),
+    PRICE                 NUMBER(10,2),
+    AVG_RATING            NUMBER(5,4),
+    TOTAL_REVIEW_COUNT    NUMBER(7)      DEFAULT 0,
+    OVERALL_POS_RATE      NUMBER(10,8),
+    OVERALL_NEU_RATE      NUMBER(10,8),
+    OVERALL_NEG_RATE      NUMBER(10,8),
+    BASE_SKIN_TYPE        VARCHAR2(20),
+    SKIN_REVIEW_COUNT     NUMBER(7)      DEFAULT 0,
+    SKIN_POS_RATE         NUMBER(10,8),
+    SKIN_NEU_RATE         NUMBER(10,8),
+    SKIN_NEG_RATE         NUMBER(10,8),
+    TOP_NEED_TAGS         VARCHAR2(300),
+    TOP_CONCERN_TAGS      VARCHAR2(300),
+    CAUTION_LEVEL         VARCHAR2(40)   DEFAULT 'normal',
+    RECOMMENDATION_SCORE  NUMBER(6,2),
+    RECOMMENDATION_TIER   VARCHAR2(40),
+    EVIDENCE_LEVEL        VARCHAR2(40),
+    REG_DATE              DATE           DEFAULT SYSDATE,
+    PRODUCT_URL           VARCHAR2(1000),
+    IMAGE_URL             VARCHAR2(1000),
+    IMAGE_STATUS          VARCHAR2(30)
+);
+
+-- ============================================================
+-- BL_REVIEWS: product reviews
+-- REVIEW_TEXT: CLOB (no byte-length limit for long Korean reviews)
+-- UQ_BL_REVIEWS_PLATFORM_REVIEW: prevent duplicate reviews per product
+-- ============================================================
+CREATE TABLE BL_REVIEWS (
+    REVIEW_ID             NUMBER         PRIMARY KEY,
+    PRODUCT_ID            NUMBER         NOT NULL,
+    PLATFORM_REVIEW_ID    VARCHAR2(50),
+    RATING                NUMBER(3,1),
+    REVIEW_TEXT           CLOB,
+    REVIEW_DATE           DATE,
+    REVIEWER_SKIN_TYPE    VARCHAR2(100),
+    REVIEWER_SKIN_CONCERN VARCHAR2(200),
+    SENTIMENT_LABEL       VARCHAR2(10),
+    SENTIMENT_ID          NUMBER(1),
+    REG_DATE              DATE           DEFAULT SYSDATE,
+    CONSTRAINT FK_REVIEWS_PRODUCT
+        FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT UQ_BL_REVIEWS_PLATFORM_REVIEW
+        UNIQUE (PRODUCT_ID, PLATFORM_REVIEW_ID)
+);
+
+-- ============================================================
+-- BL_FAVORITES: member wishlist
+-- ============================================================
+CREATE TABLE BL_FAVORITES (
+    FAVORITE_ID NUMBER  PRIMARY KEY,
+    MEMBER_ID   NUMBER  NOT NULL,
+    PRODUCT_ID  NUMBER  NOT NULL,
+    REG_DATE    DATE    DEFAULT SYSDATE,
+    CONSTRAINT FK_FAV_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_FAV_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT UQ_FAV         UNIQUE (MEMBER_ID, PRODUCT_ID)
+);
+
+-- ============================================================
+-- BL_RECOMMENDATIONS: recommendation results
+-- ============================================================
+CREATE TABLE BL_RECOMMENDATIONS (
+    REC_ID     NUMBER  PRIMARY KEY,
+    MEMBER_ID  NUMBER  NOT NULL,
+    PRODUCT_ID NUMBER  NOT NULL,
+    REC_SCORE  NUMBER(6,2),
+    REC_TIER   VARCHAR2(40),
+    REC_REASON VARCHAR2(500),
+    REC_DATE   DATE    DEFAULT SYSDATE,
+    CONSTRAINT FK_REC_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_REC_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID)
+);
+
+-- ============================================================
+-- BL_IMPORT_LOGS: data import history
+-- SKIPPED_COUNT: rows skipped due to duplicates or missing required fields
+-- ============================================================
+CREATE TABLE BL_IMPORT_LOGS (
+    LOG_ID        NUMBER         PRIMARY KEY,
+    FILE_NAME     VARCHAR2(200),
+    TOTAL_COUNT   NUMBER(7),
+    SUCCESS_COUNT NUMBER(7),
+    FAIL_COUNT    NUMBER(7),
+    SKIPPED_COUNT NUMBER(7),
+    STATUS        VARCHAR2(20),
+    ERROR_MSG     CLOB,
+    START_TIME    DATE,
+    END_TIME      DATE
+);
+
+-- ============================================================
+-- BL_PRODUCT_COMMENTS: member comments on products (soft delete)
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_PRODUCT_COMMENTS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_PRODUCT_COMMENTS (
+    COMMENT_ID    NUMBER         PRIMARY KEY,
+    PRODUCT_ID    NUMBER         NOT NULL,
+    MEMBER_ID     NUMBER         NOT NULL,
+    CONTENT       VARCHAR2(1000) NOT NULL,
+    STATUS        VARCHAR2(20)   DEFAULT 'ACTIVE',
+    CREATED_AT    DATE           DEFAULT SYSDATE,
+    UPDATED_AT    DATE,
+    DELETED_AT    DATE,
+    DELETED_BY    NUMBER,
+    DELETE_REASON VARCHAR2(300),
+    CONSTRAINT FK_COMMENT_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT FK_COMMENT_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID)
+);
+
+-- ============================================================
+-- BL_FACE_CREDENTIALS: local face login credential embeddings
+-- FACE_EMBEDDING stores a JSON array string. Original face images are not stored.
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_FACE_CREDENTIALS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_FACE_CREDENTIALS (
+    FACE_ID        NUMBER         PRIMARY KEY,
+    MEMBER_ID      NUMBER         NOT NULL,
+    FACE_EMBEDDING CLOB           NOT NULL,
+    MODEL_NAME     VARCHAR2(100),
+    FACE_ENABLED   CHAR(1)        DEFAULT 'Y',
+    CREATED_AT     DATE           DEFAULT SYSDATE,
+    UPDATED_AT     DATE,
+    CONSTRAINT FK_FACE_MEMBER FOREIGN KEY (MEMBER_ID) REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT UQ_FACE_MEMBER UNIQUE (MEMBER_ID)
+);
+
+-- ============================================================
+-- BL_PRODUCT_FAVORITES: site member product favorites
+-- Separate from legacy BL_FAVORITES to preserve original demo data.
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_PRODUCT_FAVORITES START WITH 1 NOCACHE;
+
+CREATE TABLE BL_PRODUCT_FAVORITES (
+    FAVORITE_ID NUMBER PRIMARY KEY,
+    MEMBER_ID   NUMBER NOT NULL,
+    PRODUCT_ID  NUMBER NOT NULL,
+    CREATED_AT  DATE   DEFAULT SYSDATE,
+    CONSTRAINT FK_PRODUCT_FAV_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_PRODUCT_FAV_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT UQ_PRODUCT_FAV UNIQUE (MEMBER_ID, PRODUCT_ID)
+);
+
+-- ============================================================
+-- BL_PRODUCT_RATINGS: first-party site ratings and satisfaction signals
+-- Kept separate from crawled BL_REVIEWS.
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_PRODUCT_RATINGS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_PRODUCT_RATINGS (
+    RATING_ID         NUMBER PRIMARY KEY,
+    MEMBER_ID         NUMBER NOT NULL,
+    PRODUCT_ID        NUMBER NOT NULL,
+    RATING            NUMBER(2,1) NOT NULL,
+    SKIN_TYPE_AT_TIME VARCHAR2(20),
+    IRRITATION_YN     CHAR(1),
+    REPURCHASE_YN     CHAR(1),
+    REVIEW_TEXT       CLOB,
+    CREATED_AT        DATE DEFAULT SYSDATE,
+    UPDATED_AT        DATE,
+    CONSTRAINT FK_PRODUCT_RATING_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_PRODUCT_RATING_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT UQ_PRODUCT_RATING UNIQUE (MEMBER_ID, PRODUCT_ID),
+    CONSTRAINT CK_PRODUCT_RATING_SCORE CHECK (RATING BETWEEN 1 AND 5),
+    CONSTRAINT CK_PRODUCT_RATING_IRRITATION CHECK (IRRITATION_YN IS NULL OR IRRITATION_YN IN ('Y', 'N')),
+    CONSTRAINT CK_PRODUCT_RATING_REPURCHASE CHECK (REPURCHASE_YN IS NULL OR REPURCHASE_YN IN ('Y', 'N'))
+);
+
+-- ============================================================
+-- BL_RECOMMENDATION_FEEDBACK: first-party recommendation feedback
+-- LIKE, DISLIKE, and NOT_INTERESTED are stored apart from crawled review score.
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_RECOMMENDATION_FEEDBACK START WITH 1 NOCACHE;
+
+CREATE TABLE BL_RECOMMENDATION_FEEDBACK (
+    FEEDBACK_ID       NUMBER PRIMARY KEY,
+    MEMBER_ID         NUMBER NOT NULL,
+    PRODUCT_ID        NUMBER NOT NULL,
+    FEEDBACK_TYPE     VARCHAR2(30) NOT NULL,
+    SKIN_TYPE_AT_TIME VARCHAR2(20),
+    CREATED_AT        DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_REC_FB_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_REC_FB_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT UQ_REC_FB_MEMBER_PRODUCT UNIQUE (MEMBER_ID, PRODUCT_ID),
+    CONSTRAINT CK_REC_FB_TYPE CHECK (FEEDBACK_TYPE IN ('LIKE', 'DISLIKE', 'NOT_INTERESTED'))
+);
+
+-- ============================================================
+-- BL_USER_PRODUCT_EVENTS: user-product interaction log for recommendation signals
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_USER_PRODUCT_EVENTS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_USER_PRODUCT_EVENTS (
+    EVENT_ID          NUMBER PRIMARY KEY,
+    MEMBER_ID         NUMBER NOT NULL,
+    PRODUCT_ID        NUMBER NOT NULL,
+    EVENT_TYPE        VARCHAR2(40) NOT NULL,
+    EVENT_VALUE       VARCHAR2(200),
+    SKIN_TYPE_AT_TIME VARCHAR2(20),
+    CREATED_AT        DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_USER_EVENT_MEMBER  FOREIGN KEY (MEMBER_ID)  REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_USER_EVENT_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT CK_USER_EVENT_TYPE CHECK (EVENT_TYPE IN (
+        'VIEW', 'DETAIL_VIEW', 'FAVORITE', 'UNFAVORITE', 'RATE', 'COMMENT',
+        'RECOMMEND_LIKE', 'RECOMMEND_DISLIKE', 'NOT_INTERESTED', 'RECOMMEND_FEEDBACK'
+    ))
+);
+
+-- ============================================================
+-- BL_PRODUCT_ADMIN_FLAGS: non-destructive product operation flags
+-- Original BL_PRODUCTS rows are preserved.
+-- ============================================================
+CREATE TABLE BL_PRODUCT_ADMIN_FLAGS (
+    PRODUCT_ID             NUMBER PRIMARY KEY,
+    IS_VISIBLE             CHAR(1) DEFAULT 'Y' NOT NULL,
+    EXCLUDE_RECOMMENDATION CHAR(1) DEFAULT 'N' NOT NULL,
+    IS_FEATURED            CHAR(1) DEFAULT 'N' NOT NULL,
+    QUALITY_STATUS         VARCHAR2(40) DEFAULT 'NORMAL' NOT NULL,
+    HIDE_REASON            VARCHAR2(300),
+    ADMIN_MEMO             VARCHAR2(1000),
+    UPDATED_BY             NUMBER,
+    UPDATED_AT             DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_PRODUCT_FLAGS_PRODUCT FOREIGN KEY (PRODUCT_ID) REFERENCES BL_PRODUCTS(PRODUCT_ID),
+    CONSTRAINT FK_PRODUCT_FLAGS_ADMIN FOREIGN KEY (UPDATED_BY) REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT CK_PRODUCT_FLAGS_VISIBLE CHECK (IS_VISIBLE IN ('Y', 'N')),
+    CONSTRAINT CK_PRODUCT_FLAGS_EXCLUDE CHECK (EXCLUDE_RECOMMENDATION IN ('Y', 'N')),
+    CONSTRAINT CK_PRODUCT_FLAGS_FEATURED CHECK (IS_FEATURED IN ('Y', 'N')),
+    CONSTRAINT CK_PRODUCT_FLAGS_QUALITY CHECK (QUALITY_STATUS IN (
+        'NORMAL', 'IMAGE_MISSING', 'LOW_REVIEW', 'HIGH_CAUTION',
+        'NAME_REVIEW_NEEDED', 'LINK_BROKEN'
+    ))
+);
+
+-- ============================================================
+-- BL_COMMENT_REPORTS: member reports for comment moderation
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_COMMENT_REPORTS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_COMMENT_REPORTS (
+    REPORT_ID   NUMBER PRIMARY KEY,
+    COMMENT_ID  NUMBER NOT NULL,
+    REPORTER_ID NUMBER NOT NULL,
+    REASON_TYPE VARCHAR2(30) NOT NULL,
+    REASON_TEXT VARCHAR2(1000),
+    STATUS      VARCHAR2(30) DEFAULT 'PENDING' NOT NULL,
+    HANDLED_BY  NUMBER,
+    HANDLED_AT  DATE,
+    CREATED_AT  DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_COMMENT_REPORT_COMMENT FOREIGN KEY (COMMENT_ID) REFERENCES BL_PRODUCT_COMMENTS(COMMENT_ID),
+    CONSTRAINT FK_COMMENT_REPORT_REPORTER FOREIGN KEY (REPORTER_ID) REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT FK_COMMENT_REPORT_HANDLER FOREIGN KEY (HANDLED_BY) REFERENCES BL_MEMBERS(MEMBER_ID),
+    CONSTRAINT UQ_COMMENT_REPORT UNIQUE (COMMENT_ID, REPORTER_ID),
+    CONSTRAINT CK_COMMENT_REPORT_REASON CHECK (REASON_TYPE IN ('SPAM', 'ABUSE', 'AD', 'FALSE_INFO', 'ETC')),
+    CONSTRAINT CK_COMMENT_REPORT_STATUS CHECK (STATUS IN ('PENDING', 'RESOLVED', 'REJECTED'))
+);
+
+-- ============================================================
+-- BL_ADMIN_AUDIT_LOGS: audit trail for admin operations
+-- ============================================================
+CREATE SEQUENCE SEQ_BL_ADMIN_AUDIT_LOGS START WITH 1 NOCACHE;
+
+CREATE TABLE BL_ADMIN_AUDIT_LOGS (
+    LOG_ID       NUMBER PRIMARY KEY,
+    ADMIN_ID     NUMBER NOT NULL,
+    ACTION_TYPE  VARCHAR2(60) NOT NULL,
+    TARGET_TYPE  VARCHAR2(60) NOT NULL,
+    TARGET_ID    NUMBER NOT NULL,
+    BEFORE_VALUE CLOB,
+    AFTER_VALUE  CLOB,
+    CREATED_AT   DATE DEFAULT SYSDATE,
+    CONSTRAINT FK_ADMIN_LOG_ADMIN FOREIGN KEY (ADMIN_ID) REFERENCES BL_MEMBERS(MEMBER_ID)
+);
+
+COMMIT;
+
+-- ============================================================
+-- Verification queries
+-- ============================================================
+-- SELECT table_name FROM user_tables WHERE table_name LIKE 'BL_%' ORDER BY 1;
+-- SELECT sequence_name FROM user_sequences WHERE sequence_name LIKE 'SEQ_BL_%' ORDER BY 1;
+-- SELECT column_name, data_type FROM user_tab_columns WHERE table_name = 'BL_PRODUCTS' ORDER BY column_id;

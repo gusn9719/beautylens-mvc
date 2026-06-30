@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="recommendation.dao.RecommendationDAO">
+
+    <select id="selectBySkinType" parameterType="map" resultType="recommendationVO">
+        SELECT PRODUCT_ID           AS productId,
+               PLATFORM             AS platform,
+               PRODUCT_NAME         AS productName,
+               BRAND                AS brand,
+               CATEGORY             AS category,
+               PRICE                AS price,
+               AVG_RATING           AS avgRating,
+               TOTAL_REVIEW_COUNT   AS totalReviewCount,
+               OVERALL_POS_RATE     AS overallPosRate,
+               OVERALL_NEG_RATE     AS overallNegRate,
+               BASE_SKIN_TYPE       AS baseSkinType,
+               SKIN_REVIEW_COUNT    AS skinReviewCount,
+               SKIN_POS_RATE        AS skinPosRate,
+               SKIN_NEG_RATE        AS skinNegRate,
+               TOP_NEED_TAGS        AS topNeedTags,
+               TOP_CONCERN_TAGS     AS topConcernTags,
+               CAUTION_LEVEL        AS cautionLevel,
+               RECOMMENDATION_SCORE AS recommendationScore,
+               RECOMMENDATION_TIER  AS recommendationTier,
+               EVIDENCE_LEVEL       AS evidenceLevel,
+               PRODUCT_URL          AS productUrl,
+               IMAGE_URL            AS imageUrl,
+               IMAGE_STATUS         AS imageStatus,
+               (SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES fav WHERE fav.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS favoriteCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingCount,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingAvg,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND rt.SKIN_TYPE_AT_TIME = #{skinType}) AS sameSkinRatingAvg,
+               (SELECT COUNT(*) FROM BL_USER_PRODUCT_EVENTS ev WHERE ev.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND ev.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')) AS viewCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS c WHERE c.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND c.STATUS = 'ACTIVE') AS commentCount,
+               (SELECT COUNT(*) FROM BL_RECOMMENDATION_FEEDBACK fb WHERE fb.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND fb.FEEDBACK_TYPE = 'LIKE') AS feedbackLikeCount,
+               (SELECT COUNT(*) FROM BL_RECOMMENDATION_FEEDBACK fb WHERE fb.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND fb.FEEDBACK_TYPE = 'DISLIKE') AS feedbackDislikeCount
+         FROM BL_PRODUCTS
+         WHERE BASE_SKIN_TYPE = #{skinType}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND (af.IS_VISIBLE = 'N' OR af.EXCLUDE_RECOMMENDATION = 'Y')
+           )
+         <if test="memberId != null">
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_RECOMMENDATION_FEEDBACK nf
+                 WHERE nf.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND nf.MEMBER_ID = #{memberId}
+                   AND nf.FEEDBACK_TYPE = 'NOT_INTERESTED'
+           )
+         </if>
+         ORDER BY RECOMMENDATION_SCORE DESC NULLS LAST
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+    <select id="selectFallback" parameterType="map" resultType="recommendationVO">
+        SELECT PRODUCT_ID           AS productId,
+               PLATFORM             AS platform,
+               PRODUCT_NAME         AS productName,
+               BRAND                AS brand,
+               CATEGORY             AS category,
+               PRICE                AS price,
+               AVG_RATING           AS avgRating,
+               TOTAL_REVIEW_COUNT   AS totalReviewCount,
+               OVERALL_POS_RATE     AS overallPosRate,
+               OVERALL_NEG_RATE     AS overallNegRate,
+               BASE_SKIN_TYPE       AS baseSkinType,
+               SKIN_REVIEW_COUNT    AS skinReviewCount,
+               SKIN_POS_RATE        AS skinPosRate,
+               SKIN_NEG_RATE        AS skinNegRate,
+               TOP_NEED_TAGS        AS topNeedTags,
+               TOP_CONCERN_TAGS     AS topConcernTags,
+               CAUTION_LEVEL        AS cautionLevel,
+               RECOMMENDATION_SCORE AS recommendationScore,
+               RECOMMENDATION_TIER  AS recommendationTier,
+               EVIDENCE_LEVEL       AS evidenceLevel,
+               PRODUCT_URL          AS productUrl,
+               IMAGE_URL            AS imageUrl,
+               IMAGE_STATUS         AS imageStatus,
+               (SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES fav WHERE fav.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS favoriteCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingCount,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID) AS siteRatingAvg,
+               (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND rt.SKIN_TYPE_AT_TIME = #{skinType}) AS sameSkinRatingAvg,
+               (SELECT COUNT(*) FROM BL_USER_PRODUCT_EVENTS ev WHERE ev.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND ev.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')) AS viewCount,
+               (SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS c WHERE c.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND c.STATUS = 'ACTIVE') AS commentCount,
+               (SELECT COUNT(*) FROM BL_RECOMMENDATION_FEEDBACK fb WHERE fb.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND fb.FEEDBACK_TYPE = 'LIKE') AS feedbackLikeCount,
+               (SELECT COUNT(*) FROM BL_RECOMMENDATION_FEEDBACK fb WHERE fb.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID AND fb.FEEDBACK_TYPE = 'DISLIKE') AS feedbackDislikeCount
+          FROM BL_PRODUCTS
+         WHERE NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND (af.IS_VISIBLE = 'N' OR af.EXCLUDE_RECOMMENDATION = 'Y')
+           )
+        <if test="memberId != null">
+          AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_RECOMMENDATION_FEEDBACK nf
+                 WHERE nf.PRODUCT_ID = BL_PRODUCTS.PRODUCT_ID
+                   AND nf.MEMBER_ID = #{memberId}
+                   AND nf.FEEDBACK_TYPE = 'NOT_INTERESTED'
+          )
+        </if>
+         ORDER BY RECOMMENDATION_SCORE DESC NULLS LAST
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+</mapper>

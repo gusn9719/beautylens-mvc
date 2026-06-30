@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration
+  PUBLIC "-//mybatis.org//DTD Config 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+
+  <typeAliases>
+    <typeAlias type="kr.ac.kopo.product.vo.ProductVO"  alias="productVO"/>
+    <typeAlias type="kr.ac.kopo.review.vo.ReviewVO"    alias="reviewVO"/>
+    <typeAlias type="kr.ac.kopo.common.vo.PageParam"   alias="pageParam"/>
+    <typeAlias type="kr.ac.kopo.member.vo.MemberVO"         alias="memberVO"/>
+    <typeAlias type="kr.ac.kopo.recommendation.vo.RecommendationVO" alias="recommendationVO"/>
+    <typeAlias type="kr.ac.kopo.comment.vo.CommentVO"              alias="commentVO"/>
+    <typeAlias type="kr.ac.kopo.admin.vo.AdminSummaryVO"           alias="adminSummaryVO"/>
+    <typeAlias type="kr.ac.kopo.face.vo.FaceCredentialVO"           alias="faceCredentialVO"/>
+    <typeAlias type="kr.ac.kopo.interaction.vo.ProductRatingVO"      alias="productRatingVO"/>
+    <typeAlias type="kr.ac.kopo.interaction.vo.RecommendationFeedbackVO" alias="recommendationFeedbackVO"/>
+    <typeAlias type="kr.ac.kopo.interaction.vo.UserProductEventVO"   alias="userProductEventVO"/>
+    <typeAlias type="kr.ac.kopo.admin.vo.ProductAdminFlagVO"          alias="productAdminFlagVO"/>
+    <typeAlias type="kr.ac.kopo.comment.vo.CommentReportVO"           alias="commentReportVO"/>
+    <typeAlias type="kr.ac.kopo.admin.vo.AdminAuditLogVO"              alias="adminAuditLogVO"/>
+  </typeAliases>
+
+</configuration>

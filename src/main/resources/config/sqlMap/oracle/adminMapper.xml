@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="admin.dao.AdminDAO">
+
+    <select id="selectProductCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCTS
+    </select>
+
+    <select id="selectReviewCount" resultType="int">
+        SELECT COUNT(*) FROM BL_REVIEWS
+    </select>
+
+    <select id="selectMemberCount" resultType="int">
+        SELECT COUNT(*) FROM BL_MEMBERS
+    </select>
+
+    <select id="selectCommentCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS
+    </select>
+
+    <select id="selectActiveCommentCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS WHERE STATUS = 'ACTIVE'
+    </select>
+
+    <select id="selectDeletedCommentCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS WHERE STATUS = 'DELETED'
+    </select>
+
+    <select id="selectImageFoundCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCTS WHERE IMAGE_STATUS = 'found'
+    </select>
+
+    <select id="selectImageMissingCount" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_PRODUCTS
+         WHERE IMAGE_URL IS NULL
+            OR IMAGE_STATUS IS NULL
+            OR IMAGE_STATUS != 'found'
+    </select>
+
+    <select id="selectFaceRegisteredCount" resultType="int">
+        SELECT COUNT(DISTINCT MEMBER_ID)
+          FROM BL_FACE_CREDENTIALS
+         WHERE FACE_ENABLED = 'Y'
+    </select>
+
+    <select id="selectHiddenProductCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_ADMIN_FLAGS WHERE IS_VISIBLE = 'N'
+    </select>
+
+    <select id="selectRecommendationExcludedProductCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_ADMIN_FLAGS WHERE EXCLUDE_RECOMMENDATION = 'Y'
+    </select>
+
+    <select id="selectFeaturedProductCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_ADMIN_FLAGS WHERE IS_FEATURED = 'Y'
+    </select>
+
+    <select id="selectSiteRatingCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_RATINGS
+    </select>
+
+    <select id="selectSiteRatingAverage" resultType="double">
+        SELECT NVL(ROUND(AVG(RATING), 2), 0) FROM BL_PRODUCT_RATINGS
+    </select>
+
+    <select id="selectFavoriteCount" resultType="int">
+        SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES
+    </select>
+
+    <select id="selectRecentViewCount" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_USER_PRODUCT_EVENTS
+         WHERE EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')
+           AND CREATED_AT >= SYSDATE - 7
+    </select>
+
+    <select id="selectPendingReportCount" resultType="int">
+        SELECT COUNT(*) FROM BL_COMMENT_REPORTS WHERE STATUS = 'PENDING'
+    </select>
+
+    <select id="selectPlatformCounts" resultType="map">
+        SELECT PLATFORM AS platform, COUNT(*) AS cnt
+          FROM BL_PRODUCTS
+         GROUP BY PLATFORM
+         ORDER BY PLATFORM
+    </select>
+
+    <select id="selectSkinTypeCounts" resultType="map">
+        SELECT BASE_SKIN_TYPE AS skinType, COUNT(*) AS cnt
+          FROM BL_PRODUCTS
+         WHERE BASE_SKIN_TYPE IS NOT NULL
+         GROUP BY BASE_SKIN_TYPE
+         ORDER BY BASE_SKIN_TYPE
+    </select>
+
+    <select id="selectSentimentCounts" resultType="map">
+        SELECT SENTIMENT_LABEL AS sentimentLabel, COUNT(*) AS cnt
+          FROM BL_REVIEWS
+         WHERE SENTIMENT_LABEL IS NOT NULL
+         GROUP BY SENTIMENT_LABEL
+         ORDER BY SENTIMENT_LABEL
+    </select>
+
+    <select id="selectCautionCounts" resultType="map">
+        SELECT CAUTION_LEVEL AS cautionLevel, COUNT(*) AS cnt
+          FROM BL_PRODUCTS
+         WHERE CAUTION_LEVEL IS NOT NULL
+         GROUP BY CAUTION_LEVEL
+         ORDER BY CAUTION_LEVEL
+    </select>
+
+</mapper>

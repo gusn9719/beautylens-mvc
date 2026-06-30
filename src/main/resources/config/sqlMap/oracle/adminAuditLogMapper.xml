@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="admin.audit.dao.AdminAuditLogDAO">
+
+    <insert id="insert" parameterType="adminAuditLogVO">
+        INSERT INTO BL_ADMIN_AUDIT_LOGS
+            (LOG_ID, ADMIN_ID, ACTION_TYPE, TARGET_TYPE, TARGET_ID, BEFORE_VALUE, AFTER_VALUE, CREATED_AT)
+        VALUES
+            (SEQ_BL_ADMIN_AUDIT_LOGS.NEXTVAL, #{adminId}, #{actionType}, #{targetType}, #{targetId},
+             #{beforeValue,jdbcType=CLOB}, #{afterValue,jdbcType=CLOB}, SYSDATE)
+    </insert>
+
+    <select id="selectLogs" parameterType="map" resultType="adminAuditLogVO">
+        SELECT l.LOG_ID                              AS logId,
+               l.ADMIN_ID                            AS adminId,
+               m.NICKNAME                            AS adminNickname,
+               l.ACTION_TYPE                         AS actionType,
+               l.TARGET_TYPE                         AS targetType,
+               l.TARGET_ID                           AS targetId,
+               l.BEFORE_VALUE                        AS beforeValue,
+               l.AFTER_VALUE                         AS afterValue,
+               TO_CHAR(l.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt
+          FROM BL_ADMIN_AUDIT_LOGS l
+          LEFT JOIN BL_MEMBERS m ON l.ADMIN_ID = m.MEMBER_ID
+        <where>
+          <if test="actionType != null and actionType != '' and actionType != 'all'">
+            AND l.ACTION_TYPE = #{actionType}
+          </if>
+          <if test="targetType != null and targetType != '' and targetType != 'all'">
+            AND l.TARGET_TYPE = #{targetType}
+          </if>
+          <if test="adminId != null">
+            AND l.ADMIN_ID = #{adminId}
+          </if>
+        </where>
+         ORDER BY l.LOG_ID DESC
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+</mapper>
