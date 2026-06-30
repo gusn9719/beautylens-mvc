@@ -1,0 +1,11 @@
+﻿productId,platform,brand,productName,productUrl,imageUrl,imageStatus,extractMethod,httpStatus,errorMessage
+216,musinsa,dewytree,어반쉐이드 쿨카밍 선스틱 SPF50+ PA++++ 20g,https://www.musinsa.com/products/2637406,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+680,musinsa,demaf,선글로스 글로우업 무기자차 선크림 오리지널 50ml,https://www.musinsa.com/products/4546851,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+714,musinsa,te,풀 초록35 톤업 선쿠션 (본품),https://www.musinsa.com/products/6217051,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+495,musinsa,cellfusionc,아쿠아티카 썬스크린 35ml 2pack,https://www.musinsa.com/products/4673454,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+520,musinsa,dashu,맨즈 톤 컨트롤 커버로션 65ml (+아쿠아 올인원 로션 30ml 증정),https://www.musinsa.com/products/4144561,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+255,musinsa,ongredients,스킨 베리어 카밍 로션 이엑스 220ml,https://www.musinsa.com/products/6239322,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+287,musinsa,bibiang,[보이넥스트도어 PICK] 헤어 바디 퍼퓸 미스트 100ml 월넛크릭그린,https://www.musinsa.com/products/4431245,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+399,oliveyoung,바를,[올영단독/샤벳밤 대용량]바를 차콜 멜팅 클렌징밤 100g(+3g*6),https://www.oliveyoung.co.kr/store/goods/getGoodsDetail.do?goodsNo=A000000232301,,fetch_failed,,,"HTTPSConnectionPool(host='www.oliveyoung.co.kr', port=443): Max retries exceeded"
+1033,musinsa,lush,레모니 플러터 50g - 큐티클 버터,https://www.musinsa.com/products/5069336,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
+379,musinsa,jsm,[정샘물 l 악마프2 에디션] 에센셜 물 마이크로 피팅 미스트 55ml (물결크림 5ml),https://www.musinsa.com/products/2580012,,fetch_failed,,,"HTTPSConnectionPool(host='www.musinsa.com', port=443): Max retries exceeded with"
