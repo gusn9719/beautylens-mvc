@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="comment.report.dao.CommentReportDAO">
+
+    <select id="existsReport" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_COMMENT_REPORTS
+         WHERE COMMENT_ID = #{commentId}
+           AND REPORTER_ID = #{reporterId}
+    </select>
+
+    <insert id="insert" parameterType="commentReportVO">
+        INSERT INTO BL_COMMENT_REPORTS
+            (REPORT_ID, COMMENT_ID, REPORTER_ID, REASON_TYPE, REASON_TEXT, STATUS, CREATED_AT)
+        VALUES
+            (SEQ_BL_COMMENT_REPORTS.NEXTVAL, #{commentId,jdbcType=NUMERIC},
+             #{reporterId,jdbcType=NUMERIC}, #{reasonType,jdbcType=VARCHAR},
+             #{reasonText,jdbcType=VARCHAR}, 'PENDING', SYSDATE)
+    </insert>
+
+    <select id="selectAll" parameterType="map" resultType="commentReportVO">
+        SELECT r.REPORT_ID                              AS reportId,
+               r.COMMENT_ID                             AS commentId,
+               r.REPORTER_ID                            AS reporterId,
+               reporter.NICKNAME                        AS reporterNickname,
+               r.REASON_TYPE                            AS reasonType,
+               r.REASON_TEXT                            AS reasonText,
+               r.STATUS                                 AS status,
+               r.HANDLED_BY                             AS handledBy,
+               handler.NICKNAME                         AS handledByNickname,
+               TO_CHAR(r.HANDLED_AT, 'YYYY-MM-DD HH24:MI') AS handledAt,
+               TO_CHAR(r.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               c.PRODUCT_ID                             AS productId,
+               c.CONTENT                                AS commentContent,
+               c.STATUS                                 AS commentStatus,
+               p.PRODUCT_NAME                           AS productName
+          FROM BL_COMMENT_REPORTS r
+          JOIN BL_PRODUCT_COMMENTS c ON r.COMMENT_ID = c.COMMENT_ID
+          JOIN BL_PRODUCTS p ON c.PRODUCT_ID = p.PRODUCT_ID
+          JOIN BL_MEMBERS reporter ON r.REPORTER_ID = reporter.MEMBER_ID
+          LEFT JOIN BL_MEMBERS handler ON r.HANDLED_BY = handler.MEMBER_ID
+        <where>
+          <if test="status != null and status != '' and status != 'all'">
+            AND r.STATUS = #{status}
+          </if>
+        </where>
+         ORDER BY r.REPORT_ID DESC
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+    <update id="resolve" parameterType="map">
+        UPDATE BL_COMMENT_REPORTS
+           SET STATUS = #{status,jdbcType=VARCHAR},
+               HANDLED_BY = #{handledBy,jdbcType=NUMERIC},
+               HANDLED_AT = SYSDATE
+         WHERE REPORT_ID = #{reportId,jdbcType=NUMERIC}
+    </update>
+
+</mapper>

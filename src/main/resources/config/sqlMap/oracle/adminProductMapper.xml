@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="admin.product.dao.AdminProductDAO">
+
+    <sql id="adminProductColumns">
+        p.PRODUCT_ID             AS productId,
+        p.PLATFORM               AS platform,
+        p.PLATFORM_PRODUCT_ID    AS platformProductId,
+        p.PRODUCT_KEY            AS productKey,
+        p.PRODUCT_NAME           AS productName,
+        p.BRAND                  AS brand,
+        p.CATEGORY               AS category,
+        p.PRICE                  AS price,
+        p.AVG_RATING             AS avgRating,
+        p.TOTAL_REVIEW_COUNT     AS totalReviewCount,
+        p.CAUTION_LEVEL          AS cautionLevel,
+        p.RECOMMENDATION_SCORE   AS recommendationScore,
+        p.RECOMMENDATION_TIER    AS recommendationTier,
+        p.EVIDENCE_LEVEL         AS evidenceLevel,
+        p.PRODUCT_URL            AS productUrl,
+        p.IMAGE_URL              AS imageUrl,
+        p.IMAGE_STATUS           AS imageStatus,
+        NVL(f.IS_VISIBLE, 'Y') AS isVisible,
+        NVL(f.EXCLUDE_RECOMMENDATION, 'N') AS excludeRecommendation,
+        NVL(f.IS_FEATURED, 'N') AS isFeatured,
+        NVL(f.QUALITY_STATUS, 'NORMAL') AS qualityStatus,
+        f.HIDE_REASON AS hideReason,
+        f.ADMIN_MEMO AS adminMemo,
+        f.UPDATED_BY AS updatedBy,
+        TO_CHAR(f.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt,
+        (SELECT COUNT(*) FROM BL_PRODUCT_FAVORITES fav WHERE fav.PRODUCT_ID = p.PRODUCT_ID) AS favoriteCount,
+        (SELECT COUNT(*) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = p.PRODUCT_ID) AS siteRatingCount,
+        (SELECT ROUND(AVG(rt.RATING), 2) FROM BL_PRODUCT_RATINGS rt WHERE rt.PRODUCT_ID = p.PRODUCT_ID) AS siteRatingAvg,
+        (SELECT COUNT(*) FROM BL_USER_PRODUCT_EVENTS ev WHERE ev.PRODUCT_ID = p.PRODUCT_ID AND ev.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')) AS viewCount,
+        (SELECT COUNT(*) FROM BL_PRODUCT_COMMENTS c WHERE c.PRODUCT_ID = p.PRODUCT_ID AND c.STATUS = 'ACTIVE') AS commentCount
+    </sql>
+
+    <select id="selectAdminProducts" parameterType="map" resultType="productVO">
+        SELECT <include refid="adminProductColumns" />
+          FROM BL_PRODUCTS p
+          LEFT JOIN BL_PRODUCT_ADMIN_FLAGS f ON p.PRODUCT_ID = f.PRODUCT_ID
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (p.PRODUCT_NAME LIKE '%' || #{keyword} || '%'
+                     OR p.BRAND LIKE '%' || #{keyword} || '%')
+            </if>
+            <if test="platform != null and platform != '' and platform != 'all'">
+                AND p.PLATFORM = #{platform}
+            </if>
+            <if test="visible != null and visible != '' and visible != 'all'">
+                AND NVL(f.IS_VISIBLE, 'Y') = #{visible}
+            </if>
+            <if test="excludeRecommendation != null and excludeRecommendation != '' and excludeRecommendation != 'all'">
+                AND NVL(f.EXCLUDE_RECOMMENDATION, 'N') = #{excludeRecommendation}
+            </if>
+            <if test="qualityStatus != null and qualityStatus != '' and qualityStatus != 'all'">
+                AND NVL(f.QUALITY_STATUS, 'NORMAL') = #{qualityStatus}
+            </if>
+            <if test="imageMissing != null and imageMissing == true">
+                AND (p.IMAGE_URL IS NULL OR p.IMAGE_STATUS IS NULL OR p.IMAGE_STATUS != 'found')
+            </if>
+        </where>
+         ORDER BY p.PRODUCT_ID DESC
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+    <select id="selectFlags" parameterType="int" resultType="productAdminFlagVO">
+        SELECT PRODUCT_ID AS productId,
+               IS_VISIBLE AS isVisible,
+               EXCLUDE_RECOMMENDATION AS excludeRecommendation,
+               IS_FEATURED AS isFeatured,
+               QUALITY_STATUS AS qualityStatus,
+               HIDE_REASON AS hideReason,
+               ADMIN_MEMO AS adminMemo,
+               UPDATED_BY AS updatedBy,
+               TO_CHAR(UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt
+          FROM BL_PRODUCT_ADMIN_FLAGS
+         WHERE PRODUCT_ID = #{_parameter}
+    </select>
+
+    <update id="mergeFlags" parameterType="productAdminFlagVO">
+        MERGE INTO BL_PRODUCT_ADMIN_FLAGS f
+        USING (SELECT #{productId} AS PRODUCT_ID FROM DUAL) src
+           ON (f.PRODUCT_ID = src.PRODUCT_ID)
+         WHEN MATCHED THEN UPDATE SET
+              f.IS_VISIBLE = #{isVisible,jdbcType=CHAR},
+              f.EXCLUDE_RECOMMENDATION = #{excludeRecommendation,jdbcType=CHAR},
+              f.IS_FEATURED = #{isFeatured,jdbcType=CHAR},
+              f.QUALITY_STATUS = #{qualityStatus,jdbcType=VARCHAR},
+              f.HIDE_REASON = #{hideReason,jdbcType=VARCHAR},
+              f.ADMIN_MEMO = #{adminMemo,jdbcType=VARCHAR},
+              f.UPDATED_BY = #{updatedBy,jdbcType=NUMERIC},
+              f.UPDATED_AT = SYSDATE
+         WHEN NOT MATCHED THEN INSERT
+              (PRODUCT_ID, IS_VISIBLE, EXCLUDE_RECOMMENDATION, IS_FEATURED,
+               QUALITY_STATUS, HIDE_REASON, ADMIN_MEMO, UPDATED_BY, UPDATED_AT)
+         VALUES
+              (#{productId,jdbcType=NUMERIC}, #{isVisible,jdbcType=CHAR},
+               #{excludeRecommendation,jdbcType=CHAR}, #{isFeatured,jdbcType=CHAR},
+               #{qualityStatus,jdbcType=VARCHAR}, #{hideReason,jdbcType=VARCHAR},
+               #{adminMemo,jdbcType=VARCHAR}, #{updatedBy,jdbcType=NUMERIC}, SYSDATE)
+    </update>
+
+    <update id="updateShortcut" parameterType="map">
+        UPDATE BL_PRODUCT_ADMIN_FLAGS
+           SET ${field} = #{value,jdbcType=VARCHAR},
+               HIDE_REASON = CASE WHEN #{field} = 'IS_VISIBLE' AND #{value,jdbcType=VARCHAR} = 'N'
+                                  THEN #{reason,jdbcType=VARCHAR} ELSE HIDE_REASON END,
+               UPDATED_BY = #{updatedBy,jdbcType=NUMERIC},
+               UPDATED_AT = SYSDATE
+         WHERE PRODUCT_ID = #{productId,jdbcType=NUMERIC}
+    </update>
+
+</mapper>
