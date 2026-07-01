@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="interaction.dao.ProductInteractionDAO">
+
+    <select id="existsProduct" parameterType="int" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_PRODUCTS p
+         WHERE p.PRODUCT_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+    </select>
+
+    <select id="existsFavorite" parameterType="map" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_PRODUCT_FAVORITES
+         WHERE MEMBER_ID = #{memberId}
+           AND PRODUCT_ID = #{productId}
+    </select>
+
+    <insert id="insertFavorite" parameterType="map">
+        INSERT INTO BL_PRODUCT_FAVORITES
+            (FAVORITE_ID, MEMBER_ID, PRODUCT_ID, CREATED_AT)
+        VALUES
+            (SEQ_BL_PRODUCT_FAVORITES.NEXTVAL, #{memberId}, #{productId}, SYSDATE)
+    </insert>
+
+    <delete id="deleteFavorite" parameterType="map">
+        DELETE FROM BL_PRODUCT_FAVORITES
+         WHERE MEMBER_ID = #{memberId}
+           AND PRODUCT_ID = #{productId}
+    </delete>
+
+    <select id="selectFavorites" parameterType="int" resultType="productVO">
+        SELECT p.PRODUCT_ID             AS productId,
+               p.PLATFORM               AS platform,
+               p.PLATFORM_PRODUCT_ID    AS platformProductId,
+               p.PRODUCT_KEY            AS productKey,
+               p.PRODUCT_NAME           AS productName,
+               p.BRAND                  AS brand,
+               p.CATEGORY               AS category,
+               p.PRICE                  AS price,
+               p.AVG_RATING             AS avgRating,
+               p.TOTAL_REVIEW_COUNT     AS totalReviewCount,
+               p.CAUTION_LEVEL          AS cautionLevel,
+               p.RECOMMENDATION_SCORE   AS recommendationScore,
+               p.RECOMMENDATION_TIER    AS recommendationTier,
+               p.EVIDENCE_LEVEL         AS evidenceLevel,
+               p.PRODUCT_URL            AS productUrl,
+               p.IMAGE_URL              AS imageUrl,
+               p.IMAGE_STATUS           AS imageStatus
+          FROM BL_PRODUCT_FAVORITES f
+          JOIN BL_PRODUCTS p ON f.PRODUCT_ID = p.PRODUCT_ID
+         WHERE f.MEMBER_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+         ORDER BY f.CREATED_AT DESC, f.FAVORITE_ID DESC
+    </select>
+
+    <update id="mergeRating" parameterType="productRatingVO">
+        MERGE INTO BL_PRODUCT_RATINGS r
+        USING (
+            SELECT #{memberId,jdbcType=NUMERIC} AS MEMBER_ID,
+                   #{productId,jdbcType=NUMERIC} AS PRODUCT_ID
+              FROM DUAL
+        ) src
+           ON (r.MEMBER_ID = src.MEMBER_ID AND r.PRODUCT_ID = src.PRODUCT_ID)
+         WHEN MATCHED THEN UPDATE SET
+              r.RATING = #{rating,jdbcType=NUMERIC},
+              r.SKIN_TYPE_AT_TIME = #{skinTypeAtTime,jdbcType=VARCHAR},
+              r.IRRITATION_YN = #{irritationYn,jdbcType=CHAR},
+              r.REPURCHASE_YN = #{repurchaseYn,jdbcType=CHAR},
+              r.REVIEW_TEXT = #{reviewText,jdbcType=CLOB},
+              r.UPDATED_AT = SYSDATE
+         WHEN NOT MATCHED THEN INSERT
+              (RATING_ID, MEMBER_ID, PRODUCT_ID, RATING, SKIN_TYPE_AT_TIME,
+               IRRITATION_YN, REPURCHASE_YN, REVIEW_TEXT, CREATED_AT, UPDATED_AT)
+         VALUES
+              (SEQ_BL_PRODUCT_RATINGS.NEXTVAL, #{memberId,jdbcType=NUMERIC}, #{productId,jdbcType=NUMERIC},
+               #{rating,jdbcType=NUMERIC}, #{skinTypeAtTime,jdbcType=VARCHAR},
+               #{irritationYn,jdbcType=CHAR}, #{repurchaseYn,jdbcType=CHAR},
+               #{reviewText,jdbcType=CLOB}, SYSDATE, SYSDATE)
+    </update>
+
+    <select id="selectRating" parameterType="map" resultType="productRatingVO">
+        SELECT r.RATING_ID                              AS ratingId,
+               r.MEMBER_ID                              AS memberId,
+               r.PRODUCT_ID                             AS productId,
+               r.RATING                                 AS rating,
+               r.SKIN_TYPE_AT_TIME                      AS skinTypeAtTime,
+               r.IRRITATION_YN                          AS irritationYn,
+               r.REPURCHASE_YN                          AS repurchaseYn,
+               r.REVIEW_TEXT                            AS reviewText,
+               TO_CHAR(r.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               TO_CHAR(r.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt,
+               p.PRODUCT_NAME                           AS productName,
+               p.BRAND                                  AS brand,
+               p.IMAGE_URL                              AS imageUrl
+          FROM BL_PRODUCT_RATINGS r
+          JOIN BL_PRODUCTS p ON r.PRODUCT_ID = p.PRODUCT_ID
+         WHERE r.MEMBER_ID = #{memberId}
+           AND r.PRODUCT_ID = #{productId}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+    </select>
+
+    <delete id="deleteRating" parameterType="map">
+        DELETE FROM BL_PRODUCT_RATINGS
+         WHERE MEMBER_ID = #{memberId,jdbcType=NUMERIC}
+           AND PRODUCT_ID = #{productId,jdbcType=NUMERIC}
+    </delete>
+
+    <select id="selectRatingsByMember" parameterType="int" resultType="productRatingVO">
+        SELECT r.RATING_ID                              AS ratingId,
+               r.MEMBER_ID                              AS memberId,
+               r.PRODUCT_ID                             AS productId,
+               r.RATING                                 AS rating,
+               r.SKIN_TYPE_AT_TIME                      AS skinTypeAtTime,
+               r.IRRITATION_YN                          AS irritationYn,
+               r.REPURCHASE_YN                          AS repurchaseYn,
+               r.REVIEW_TEXT                            AS reviewText,
+               TO_CHAR(r.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               TO_CHAR(r.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt,
+               p.PRODUCT_NAME                           AS productName,
+               p.BRAND                                  AS brand,
+               p.IMAGE_URL                              AS imageUrl
+          FROM BL_PRODUCT_RATINGS r
+          JOIN BL_PRODUCTS p ON r.PRODUCT_ID = p.PRODUCT_ID
+         WHERE r.MEMBER_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+         ORDER BY r.UPDATED_AT DESC, r.RATING_ID DESC
+    </select>
+
+    <delete id="deleteRecommendationFeedback" parameterType="map">
+        DELETE FROM BL_RECOMMENDATION_FEEDBACK
+         WHERE MEMBER_ID = #{memberId}
+           AND PRODUCT_ID = #{productId}
+    </delete>
+
+    <insert id="insertRecommendationFeedback" parameterType="recommendationFeedbackVO">
+        INSERT INTO BL_RECOMMENDATION_FEEDBACK
+            (FEEDBACK_ID, MEMBER_ID, PRODUCT_ID, FEEDBACK_TYPE, SKIN_TYPE_AT_TIME, CREATED_AT)
+        VALUES
+            (SEQ_BL_RECOMMENDATION_FEEDBACK.NEXTVAL, #{memberId,jdbcType=NUMERIC},
+             #{productId,jdbcType=NUMERIC}, #{feedbackType,jdbcType=VARCHAR},
+             #{skinTypeAtTime,jdbcType=VARCHAR}, SYSDATE)
+    </insert>
+
+    <select id="selectFeedbackByMember" parameterType="int" resultType="recommendationFeedbackVO">
+        SELECT f.FEEDBACK_ID                            AS feedbackId,
+               f.MEMBER_ID                              AS memberId,
+               f.PRODUCT_ID                             AS productId,
+               f.FEEDBACK_TYPE                          AS feedbackType,
+               f.SKIN_TYPE_AT_TIME                      AS skinTypeAtTime,
+               TO_CHAR(f.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               p.PRODUCT_NAME                           AS productName,
+               p.BRAND                                  AS brand,
+               p.IMAGE_URL                              AS imageUrl
+          FROM BL_RECOMMENDATION_FEEDBACK f
+          JOIN BL_PRODUCTS p ON f.PRODUCT_ID = p.PRODUCT_ID
+         WHERE f.MEMBER_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+         ORDER BY f.CREATED_AT DESC, f.FEEDBACK_ID DESC
+    </select>
+
+    <insert id="insertEvent" parameterType="userProductEventVO">
+        INSERT INTO BL_USER_PRODUCT_EVENTS
+            (EVENT_ID, MEMBER_ID, PRODUCT_ID, EVENT_TYPE, EVENT_VALUE, SKIN_TYPE_AT_TIME, CREATED_AT)
+        VALUES
+            (SEQ_BL_USER_PRODUCT_EVENTS.NEXTVAL, #{memberId,jdbcType=NUMERIC},
+             #{productId,jdbcType=NUMERIC}, #{eventType,jdbcType=VARCHAR},
+             #{eventValue,jdbcType=VARCHAR}, #{skinTypeAtTime,jdbcType=VARCHAR}, SYSDATE)
+    </insert>
+
+    <select id="selectRecentProducts" parameterType="int" resultType="userProductEventVO">
+        SELECT EVENT_ID       AS eventId,
+               MEMBER_ID      AS memberId,
+               PRODUCT_ID     AS productId,
+               EVENT_TYPE     AS eventType,
+               EVENT_VALUE    AS eventValue,
+               SKIN_TYPE_AT_TIME AS skinTypeAtTime,
+               CREATED_AT     AS createdAt,
+               PRODUCT_NAME   AS productName,
+               BRAND          AS brand,
+               IMAGE_URL      AS imageUrl
+          FROM (
+            SELECT e.EVENT_ID,
+                   e.MEMBER_ID,
+                   e.PRODUCT_ID,
+                   e.EVENT_TYPE,
+                   e.EVENT_VALUE,
+                   e.SKIN_TYPE_AT_TIME,
+                   TO_CHAR(e.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS CREATED_AT,
+                   p.PRODUCT_NAME,
+                   p.BRAND,
+                   p.IMAGE_URL,
+                   ROW_NUMBER() OVER (PARTITION BY e.PRODUCT_ID ORDER BY e.CREATED_AT DESC, e.EVENT_ID DESC) AS rn
+              FROM BL_USER_PRODUCT_EVENTS e
+              JOIN BL_PRODUCTS p ON e.PRODUCT_ID = p.PRODUCT_ID
+             WHERE e.MEMBER_ID = #{_parameter}
+               AND e.EVENT_TYPE IN ('VIEW', 'DETAIL_VIEW')
+               AND NOT EXISTS (
+                    SELECT 1
+                      FROM BL_PRODUCT_ADMIN_FLAGS af
+                     WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                       AND af.IS_VISIBLE = 'N'
+               )
+          )
+         WHERE rn = 1
+         ORDER BY eventId DESC
+         FETCH FIRST 20 ROWS ONLY
+    </select>
+
+</mapper>

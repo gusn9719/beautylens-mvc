@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="comment.dao.CommentDAO">
+
+    <select id="selectByProductId" parameterType="int" resultType="commentVO">
+        SELECT c.COMMENT_ID                             AS commentId,
+               c.PRODUCT_ID                             AS productId,
+               c.MEMBER_ID                              AS memberId,
+               m.NICKNAME                               AS nickname,
+               c.CONTENT                                AS content,
+               c.STATUS                                 AS status,
+               TO_CHAR(c.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               TO_CHAR(c.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt
+          FROM BL_PRODUCT_COMMENTS c
+          JOIN BL_MEMBERS m ON c.MEMBER_ID = m.MEMBER_ID
+         WHERE c.PRODUCT_ID = #{productId}
+           AND c.STATUS = 'ACTIVE'
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = c.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+         ORDER BY c.COMMENT_ID DESC
+    </select>
+
+    <select id="selectAll" parameterType="map" resultType="commentVO">
+        SELECT c.COMMENT_ID                             AS commentId,
+               c.PRODUCT_ID                             AS productId,
+               c.MEMBER_ID                              AS memberId,
+               m.NICKNAME                               AS nickname,
+               p.PRODUCT_NAME                           AS productName,
+               c.CONTENT                                AS content,
+               c.STATUS                                 AS status,
+               TO_CHAR(c.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               TO_CHAR(c.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt,
+               TO_CHAR(c.DELETED_AT, 'YYYY-MM-DD HH24:MI') AS deletedAt,
+               c.DELETED_BY                             AS deletedBy,
+               c.DELETE_REASON                          AS deleteReason
+          FROM BL_PRODUCT_COMMENTS c
+          JOIN BL_MEMBERS m ON c.MEMBER_ID = m.MEMBER_ID
+          JOIN BL_PRODUCTS p ON c.PRODUCT_ID = p.PRODUCT_ID
+        <where>
+          <if test="status != null and status != ''">
+            AND c.STATUS = #{status}
+          </if>
+        </where>
+         ORDER BY c.COMMENT_ID DESC
+         FETCH FIRST #{size} ROWS ONLY
+    </select>
+
+    <select id="selectOne" parameterType="int" resultType="commentVO">
+        SELECT COMMENT_ID AS commentId,
+               PRODUCT_ID AS productId,
+               MEMBER_ID  AS memberId,
+               CONTENT    AS content,
+               STATUS     AS status
+          FROM BL_PRODUCT_COMMENTS
+         WHERE COMMENT_ID = #{commentId}
+    </select>
+
+    <select id="selectByMemberId" parameterType="int" resultType="commentVO">
+        SELECT c.COMMENT_ID                             AS commentId,
+               c.PRODUCT_ID                             AS productId,
+               c.MEMBER_ID                              AS memberId,
+               m.NICKNAME                               AS nickname,
+               p.PRODUCT_NAME                           AS productName,
+               p.BRAND                                  AS brand,
+               p.IMAGE_URL                              AS imageUrl,
+               c.CONTENT                                AS content,
+               c.STATUS                                 AS status,
+               TO_CHAR(c.CREATED_AT, 'YYYY-MM-DD HH24:MI') AS createdAt,
+               TO_CHAR(c.UPDATED_AT, 'YYYY-MM-DD HH24:MI') AS updatedAt,
+               TO_CHAR(c.DELETED_AT, 'YYYY-MM-DD HH24:MI') AS deletedAt,
+               c.DELETED_BY                             AS deletedBy,
+               c.DELETE_REASON                          AS deleteReason
+          FROM BL_PRODUCT_COMMENTS c
+          JOIN BL_MEMBERS m ON c.MEMBER_ID = m.MEMBER_ID
+          JOIN BL_PRODUCTS p ON c.PRODUCT_ID = p.PRODUCT_ID
+         WHERE c.MEMBER_ID = #{_parameter}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+         ORDER BY c.COMMENT_ID DESC
+    </select>
+
+    <select id="existsProduct" parameterType="int" resultType="int">
+        SELECT COUNT(*)
+          FROM BL_PRODUCTS p
+         WHERE p.PRODUCT_ID = #{productId}
+           AND NOT EXISTS (
+                SELECT 1
+                  FROM BL_PRODUCT_ADMIN_FLAGS af
+                 WHERE af.PRODUCT_ID = p.PRODUCT_ID
+                   AND af.IS_VISIBLE = 'N'
+           )
+    </select>
+
+    <insert id="insert" parameterType="commentVO">
+        INSERT INTO BL_PRODUCT_COMMENTS
+            (COMMENT_ID, PRODUCT_ID, MEMBER_ID, CONTENT, STATUS, CREATED_AT)
+        VALUES
+            (SEQ_BL_PRODUCT_COMMENTS.NEXTVAL, #{productId}, #{memberId}, #{content}, 'ACTIVE', SYSDATE)
+    </insert>
+
+    <update id="updateContent" parameterType="map">
+        UPDATE BL_PRODUCT_COMMENTS
+           SET CONTENT    = #{content,jdbcType=VARCHAR},
+               UPDATED_AT = SYSDATE
+         WHERE COMMENT_ID = #{commentId,jdbcType=NUMERIC}
+           AND MEMBER_ID  = #{memberId,jdbcType=NUMERIC}
+           AND STATUS     = 'ACTIVE'
+    </update>
+
+    <update id="softDelete" parameterType="map">
+        UPDATE BL_PRODUCT_COMMENTS
+           SET STATUS        = 'DELETED',
+               DELETED_AT    = SYSDATE,
+               DELETED_BY    = #{adminId},
+               DELETE_REASON = #{reason}
+         WHERE COMMENT_ID = #{commentId}
+    </update>
+
+    <update id="restore" parameterType="map">
+        UPDATE BL_PRODUCT_COMMENTS
+           SET STATUS        = 'ACTIVE',
+               UPDATED_AT    = SYSDATE,
+               DELETED_AT    = NULL,
+               DELETED_BY    = NULL,
+               DELETE_REASON = NULL
+         WHERE COMMENT_ID = #{commentId}
+    </update>
+
+</mapper>
