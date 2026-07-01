@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="900" viewBox="0 0 1320 900">
+  <defs>
+    <style>
+      .bg { fill:#f7f8fa; }
+      .box { fill:#ffffff; stroke:#2f3b45; stroke-width:1.5; rx:8; }
+      .core { fill:#eef6ff; }
+      .activity { fill:#f4fff2; }
+      .admin { fill:#fff6e8; }
+      .face { fill:#f7f0ff; }
+      .title { font-family:Arial, sans-serif; font-size:15px; font-weight:700; fill:#20252b; }
+      .text { font-family:Arial, sans-serif; font-size:12px; fill:#34424f; }
+      .rel { stroke:#5a6b78; stroke-width:1.4; fill:none; marker-end:url(#arrow); }
+      .note { font-family:Arial, sans-serif; font-size:13px; fill:#20252b; font-weight:700; }
+    </style>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#5a6b78"/>
+    </marker>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1320" height="900"/>
+  <text class="note" x="40" y="38">BeautyLens 핵심 ERD: 실제 FK 제약조건과 MyBatis JOIN 기준 논리 관계를 함께 정리</text>
+
+  <rect class="box core" x="60" y="90" width="230" height="150"/>
+  <text class="title" x="80" y="120">BL_MEMBERS</text>
+  <text class="text" x="80" y="148">PK MEMBER_ID</text>
+  <text class="text" x="80" y="170">LOGIN_ID, PASSWORD</text>
+  <text class="text" x="80" y="192">NICKNAME, SKIN_TYPE</text>
+  <text class="text" x="80" y="214">SKIN_CONCERN, ROLE</text>
+
+  <rect class="box core" x="545" y="90" width="260" height="190"/>
+  <text class="title" x="565" y="120">BL_PRODUCTS</text>
+  <text class="text" x="565" y="148">PK PRODUCT_ID</text>
+  <text class="text" x="565" y="170">PRODUCT_KEY, PLATFORM</text>
+  <text class="text" x="565" y="192">PRODUCT_NAME, BRAND</text>
+  <text class="text" x="565" y="214">IMAGE_URL, PRODUCT_URL</text>
+  <text class="text" x="565" y="236">RECOMMENDATION_SCORE</text>
+  <text class="text" x="565" y="258">CAUTION_LEVEL, BASE_SKIN_TYPE</text>
+
+  <rect class="box core" x="1010" y="90" width="240" height="145"/>
+  <text class="title" x="1030" y="120">BL_REVIEWS</text>
+  <text class="text" x="1030" y="148">PK REVIEW_ID</text>
+  <text class="text" x="1030" y="170">FK PRODUCT_ID</text>
+  <text class="text" x="1030" y="192">REVIEW_TEXT, RATING</text>
+  <text class="text" x="1030" y="214">SENTIMENT_LABEL</text>
+
+  <rect class="box activity" x="60" y="330" width="230" height="130"/>
+  <text class="title" x="80" y="360">BL_PRODUCT_FAVORITES</text>
+  <text class="text" x="80" y="388">PK FAVORITE_ID</text>
+  <text class="text" x="80" y="410">FK MEMBER_ID</text>
+  <text class="text" x="80" y="432">FK PRODUCT_ID</text>
+
+  <rect class="box activity" x="340" y="330" width="230" height="150"/>
+  <text class="title" x="360" y="360">BL_PRODUCT_RATINGS</text>
+  <text class="text" x="360" y="388">PK RATING_ID</text>
+  <text class="text" x="360" y="410">FK MEMBER_ID, PRODUCT_ID</text>
+  <text class="text" x="360" y="432">RATING, IRRITATION_YN</text>
+  <text class="text" x="360" y="454">REPURCHASE_YN</text>
+
+  <rect class="box activity" x="620" y="330" width="250" height="150"/>
+  <text class="title" x="640" y="360">BL_USER_PRODUCT_EVENTS</text>
+  <text class="text" x="640" y="388">PK EVENT_ID</text>
+  <text class="text" x="640" y="410">FK MEMBER_ID, PRODUCT_ID</text>
+  <text class="text" x="640" y="432">EVENT_TYPE</text>
+  <text class="text" x="640" y="454">CREATED_AT</text>
+
+  <rect class="box activity" x="920" y="330" width="270" height="150"/>
+  <text class="title" x="940" y="360">BL_RECOMMENDATION_FEEDBACK</text>
+  <text class="text" x="940" y="388">PK FEEDBACK_ID</text>
+  <text class="text" x="940" y="410">FK MEMBER_ID, PRODUCT_ID</text>
+  <text class="text" x="940" y="432">LIKE / DISLIKE</text>
+  <text class="text" x="940" y="454">NOT_INTERESTED</text>
+
+  <rect class="box activity" x="340" y="560" width="250" height="150"/>
+  <text class="title" x="360" y="590">BL_PRODUCT_COMMENTS</text>
+  <text class="text" x="360" y="618">PK COMMENT_ID</text>
+  <text class="text" x="360" y="640">FK MEMBER_ID, PRODUCT_ID</text>
+  <text class="text" x="360" y="662">CONTENT, STATUS</text>
+  <text class="text" x="360" y="684">DELETED_AT, DELETE_REASON</text>
+
+  <rect class="box activity" x="650" y="560" width="250" height="150"/>
+  <text class="title" x="670" y="590">BL_COMMENT_REPORTS</text>
+  <text class="text" x="670" y="618">PK REPORT_ID</text>
+  <text class="text" x="670" y="640">FK COMMENT_ID</text>
+  <text class="text" x="670" y="662">FK REPORTER_ID</text>
+  <text class="text" x="670" y="684">STATUS, HANDLED_BY</text>
+
+  <rect class="box admin" x="980" y="560" width="260" height="150"/>
+  <text class="title" x="1000" y="590">BL_PRODUCT_ADMIN_FLAGS</text>
+  <text class="text" x="1000" y="618">PK/FK PRODUCT_ID</text>
+  <text class="text" x="1000" y="640">IS_VISIBLE</text>
+  <text class="text" x="1000" y="662">EXCLUDE_RECOMMENDATION</text>
+  <text class="text" x="1000" y="684">QUALITY_STATUS, ADMIN_MEMO</text>
+
+  <rect class="box face" x="60" y="560" width="230" height="150"/>
+  <text class="title" x="80" y="590">BL_FACE_CREDENTIALS</text>
+  <text class="text" x="80" y="618">PK FACE_ID</text>
+  <text class="text" x="80" y="640">FK MEMBER_ID</text>
+  <text class="text" x="80" y="662">FACE_EMBEDDING</text>
+  <text class="text" x="80" y="684">FACE_ENABLED</text>
+
+  <rect class="box admin" x="980" y="750" width="260" height="105"/>
+  <text class="title" x="1000" y="780">BL_ADMIN_AUDIT_LOGS</text>
+  <text class="text" x="1000" y="808">PK LOG_ID, FK ADMIN_ID</text>
+  <text class="text" x="1000" y="830">ACTION_TYPE, TARGET_TYPE</text>
+
+  <path class="rel" d="M290 165 L545 165"/>
+  <path class="rel" d="M805 165 L1010 165"/>
+  <path class="rel" d="M175 240 L175 330"/>
+  <path class="rel" d="M290 395 L545 230"/>
+  <path class="rel" d="M175 240 L455 330"/>
+  <path class="rel" d="M570 405 L620 405"/>
+  <path class="rel" d="M745 330 L700 280"/>
+  <path class="rel" d="M290 165 L1055 330"/>
+  <path class="rel" d="M920 405 L805 235"/>
+  <path class="rel" d="M175 240 L465 560"/>
+  <path class="rel" d="M465 560 L640 280"/>
+  <path class="rel" d="M590 635 L650 635"/>
+  <path class="rel" d="M775 560 L290 180"/>
+  <path class="rel" d="M980 635 L805 220"/>
+  <path class="rel" d="M175 240 L175 560"/>
+  <path class="rel" d="M1110 750 L1110 710"/>
+</svg>
